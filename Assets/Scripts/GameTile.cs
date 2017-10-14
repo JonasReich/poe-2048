@@ -1,3 +1,7 @@
+//-------------------------
+// (c) 2017, Jonas Reich
+//-------------------------
+
 using UnityEngine;
 
 public class GameTile : MonoBehaviour
@@ -6,7 +10,7 @@ public class GameTile : MonoBehaviour
 	public float Speed, Scale;
 	internal bool IsMergeOrigin, IsMergeTarget;
 
-	internal bool Moving {get { return transform.position != _moveTargetPosition; }}
+	internal bool Moving {get { return transform.position != MoveTargetPosition; }}
 	internal GameTile MergeTarget;
 
 	/// <summary>
@@ -14,15 +18,7 @@ public class GameTile : MonoBehaviour
 	/// </summary>
 	public int Value { get; private set; }
 
-	Vector3 _moveTargetPosition;
-	public Vector3 MoveTargetPosition
-	{
-		set
-		{
-			if (value == _moveTargetPosition) return;
-			_moveTargetPosition = value;
-		}
-	}
+	internal Vector3 MoveTargetPosition;
 
 	Animator _animator;
 
@@ -45,8 +41,8 @@ public class GameTile : MonoBehaviour
 
 		transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(Scale, Scale, Scale), 10 * Time.deltaTime);
 
-		if (transform.position != _moveTargetPosition && IsMergeTarget == false)
-			transform.position = Vector3.MoveTowards(transform.position, _moveTargetPosition, Speed * Time.deltaTime);
+		if (transform.position != MoveTargetPosition && IsMergeTarget == false)
+			transform.position = Vector3.MoveTowards(transform.position, MoveTargetPosition, Speed * Time.deltaTime);
 	}
 
 
@@ -64,11 +60,11 @@ public class GameTile : MonoBehaviour
 	public void PreKill()
 	{
 		Value = 0;
-		//Scale = 0.5f;
 	}
 
 	public void Kill()
 	{
+		Value = 0;
 		Scale = 0.5f;
 		_animator.SetTrigger("kill");
 	}

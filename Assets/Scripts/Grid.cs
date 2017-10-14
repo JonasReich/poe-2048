@@ -1,3 +1,7 @@
+//-------------------------
+// (c) 2017, Jonas Reich
+//-------------------------
+
 using UnityEngine;
 using System.Collections;
 using System;

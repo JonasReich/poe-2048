@@ -1,6 +1,11 @@
+//-------------------------
+// (c) 2017, Jonas Reich
+//-------------------------
+
 using System;
 using UnityEngine;
 using System.Collections;
+using UnityEngine.WSA;
 
 namespace NONE
 {
@@ -41,7 +46,8 @@ namespace NONE
 		new void Start()
 		{
 			base.Start();
-			MoveEnd();
+			foreach (GameTile t in TileGrid)
+				t.MoveTargetPosition = t.transform.position;
 			Restart();
 		}
 
