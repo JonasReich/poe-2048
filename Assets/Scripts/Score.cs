@@ -1,38 +1,41 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class Score : MonoBehaviour {
-	private static int score;
-	private static Score instance;
-	private static bool victory;
+	static int _score;
+	static Score _instance;
+	static bool _victory;
 
-	void Awake () {
-		instance = this;
-		score = 0;
-		victory = false;
+	void Awake ()
+	{
+		_instance = this;
+		_score = 0;
+		_victory = false;
 	}
 
-	void Update () {
-		if (!victory) {
-			GetComponent<TextMesh>().text = score.ToString();
-		} else {
-			GetComponent<TextMesh>().text = "VICTORY! - " + score.ToString();
-		}
+	void Update ()
+	{
+		if (!_victory)
+			GetComponent<TextMesh>().text = _score.ToString();
+		else
+			GetComponent<TextMesh>().text = "VICTORY! - " + _score;
 
-		if (transform.localScale.x > 1) {
+		if (transform.localScale.x > 1)
 			transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(1, 1, 1), 5 * Time.deltaTime);
-		}
 	}
 
-	public static void Raise (int amount) {
-		score += amount;
-		instance.transform.localScale = new Vector3(1.3f, 1.3f);
+	public static void Raise (int amount)
+	{
+		_score += amount;
+		_instance.transform.localScale = new Vector3(1.3f, 1.3f);
 	}
 
-	public static void Clear () {
-		score = 0;
+	public static void Clear ()
+	{
+		_score = 0;
 	}
 
-	public static void Victory () {
-		victory = true;
+	public static void Victory ()
+	{
+		_victory = true;
 	}
 }

@@ -1,81 +1,93 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-public class GameTile : MonoBehaviour {
-	public int x, y;
-	public float speed, scale;
-	public bool isMergeOrigin, isMergeTarget, moving;
-	public GameTile mergeTarget;
+public class GameTile : MonoBehaviour
+{
+	public int X, Y;
+	public float Speed, Scale;
+	internal bool IsMergeOrigin, IsMergeTarget;
 
-	
-	public int _index;
-	public int index { get { return _index; } }
+	internal bool Moving {get { return transform.position != _moveTargetPosition; }}
+	internal GameTile MergeTarget;
 
-	private Vector3 _moveTargetPosition;
-	public Vector3 moveTargetPosition {
-		set {
-			if(value != _moveTargetPosition) {
-				_moveTargetPosition = value;
-				moving = true;
-			}
+	/// <summary>
+	/// Value of the individual tile 2, 4, 8, ...
+	/// </summary>
+	public int Value { get; private set; }
+
+	Vector3 _moveTargetPosition;
+	public Vector3 MoveTargetPosition
+	{
+		set
+		{
+			if (value == _moveTargetPosition) return;
+			_moveTargetPosition = value;
 		}
 	}
 
-	private Animator animator;
-	
+	Animator _animator;
 
-	void Awake() {
-		scale = 0.5f;
 
-		_index = x = y = 0;
-		isMergeOrigin = isMergeTarget = moving = false;
-		mergeTarget = null;
+	void Awake()
+	{
+		Scale = 0.5f;
 
-		animator = GetComponent<Animator>();
+		Value = X = Y = 0;
+		IsMergeOrigin = IsMergeTarget = false;
+		MergeTarget = null;
+
+		_animator = GetComponent<Animator>();
 	}
 
-	void Update () {
-		if(!isMergeTarget)
-			animator.SetInteger("value", _index);
-		
-		transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(scale, scale, scale), 10 * Time.deltaTime);
+	void Update()
+	{
+		if (!IsMergeTarget)
+			_animator.SetInteger("value", Value);
 
-		if (transform.position != _moveTargetPosition && isMergeTarget == false) {
-			transform.position = Vector3.MoveTowards(transform.position, _moveTargetPosition, speed * Time.deltaTime); //Vector3.Lerp(transform.position, targetPosition, speed * Time.deltaTime);
-		} else {
-			moving = false;
-		}
+		transform.localScale = Vector3.Lerp(transform.localScale, new Vector3(Scale, Scale, Scale), 10 * Time.deltaTime);
+
+		if (transform.position != _moveTargetPosition && IsMergeTarget == false)
+			transform.position = Vector3.MoveTowards(transform.position, _moveTargetPosition, Speed * Time.deltaTime);
 	}
 
 
-	void OnTriggerEnter2D (Collider2D other) {
-		if (isMergeOrigin && other.gameObject.GetComponent<GameTile>().isMergeTarget) {
-			isMergeOrigin = false;
-			mergeTarget.isMergeTarget = false;
+	void OnTriggerEnter2D(Collider2D other)
+	{
+		if (IsMergeOrigin && other.gameObject.GetComponent<GameTile>().IsMergeTarget)
+		{
+			IsMergeOrigin = false;
+			MergeTarget.IsMergeTarget = false;
 			Merge();
+			other.GetComponent<GameTile>().Kill();
 		}
 	}
 
-
-	public void Kill () {
-		_index = 0;
-		animator.SetTrigger("kill");
-		scale = 0.5f;
+	public void PreKill()
+	{
+		Value = 0;
+		//Scale = 0.5f;
 	}
 
-	public void Spawn () {
-		animator.SetTrigger("spawn");
-		_index = (UnityEngine.Random.value > 0.5) ? 2 : 4;
-		scale = 1f;
+	public void Kill()
+	{
+		Scale = 0.5f;
+		_animator.SetTrigger("kill");
 	}
 
-	public void Merge () {
-		_index *= 2;
-		if (_index == 2048)
+	public void Spawn()
+	{
+		_animator.SetTrigger("spawn");
+		Value = (UnityEngine.Random.value > 0.5) ? 2 : 4;
+		Scale = 1f;
+	}
+
+	public void Merge()
+	{
+		Value *= 2;
+		if (Value == 2048)
 			Score.Victory();
-		animator.SetTrigger("merge");
+		_animator.SetTrigger("merge");
 		transform.localScale = new Vector3(1.5f, 1.5f);
 
-		//Raise score by new value
-		Score.Raise(_index);
+		Score.Raise(Value);
 	}
 }

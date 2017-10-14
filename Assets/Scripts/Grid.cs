@@ -1,118 +1,127 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System;
 
-public class Grid<TileType> : MonoBehaviour where TileType : MonoBehaviour {
-	public TileType prefab;
-	
-	protected int columnCount;
-	protected int rowCount;
+public class Grid<TTileType> : MonoBehaviour where TTileType : MonoBehaviour
+{
+	public TTileType Prefab;
 
-	protected TileType[,] tileGrid;
-	protected int tileCount;
+	protected int ColumnCount;
+	protected int RowCount;
 
-	protected class Coordinates {
-		public int x, y;
+	protected TTileType[,] TileGrid;
+	protected int TileCount;
 
-		public Coordinates(int _x, int _y) {
-			x = _x;
-			y = _y;
+	protected class Coordinates
+	{
+		public int X, Y;
+
+		public Coordinates(int x, int y)
+		{
+			X = x;
+			Y = y;
 		}
 	}
-	
 
 
-	public virtual void Awake () {
-		tileGrid = new TileType[columnCount, rowCount];
-		tileCount = 0;
+
+	public virtual void Awake()
+	{
+		TileGrid = new TTileType[ColumnCount, RowCount];
+		TileCount = 0;
 	}
 
-	public virtual void Start () {
+	public virtual void Start()
+	{
 		CreateTiles();
 	}
 
 
 	//SETUP GRID
 
-	private void CreateTiles () {
-		for (int x = 0; x < rowCount; x++) {
-			for (int y = 0; y < columnCount; y++) {
-				TileType tNew = (TileType)Instantiate(prefab, new Vector3(0.5f + y - columnCount / 2, 0.5f + x - rowCount / 2), transform.rotation);
+	void CreateTiles()
+	{
+		for (int x = 0; x < RowCount; x++)
+		{
+			for (int y = 0; y < ColumnCount; y++)
+			{
+				TTileType tNew = Instantiate(Prefab, new Vector3(0.5f + y - ColumnCount / 2.0f, 0.5f + x - RowCount / 2.0f), transform.rotation);
 
-				tNew.name = x.ToString() + " " + y.ToString();
-				tileGrid[y, x] = tNew;
+				tNew.name = x + " " + y;
+				TileGrid[y, x] = tNew;
 				tNew.transform.parent = this.transform;
-				tileCount++;
+				TileCount++;
 			}
 		}
 	}
-	
+
 
 	//GRID MANIPULATION
 
-	protected Coordinates getGridPosition (TileType originTile) {
-		for (int x = 0; x < rowCount; x++) {
-			for (int y = 0; y < columnCount; y++) {
-				if (originTile == tileGrid[y, x]) {
+	protected Coordinates GetGridPosition(TTileType originTile)
+	{
+		for (int x = 0; x < RowCount; x++)
+			for (int y = 0; y < ColumnCount; y++)
+				if (originTile == TileGrid[y, x])
 					return new Coordinates(y, x);
-				}
-			}
-		}
+
 		return new Coordinates(0, 0);
 	}
 
-	protected TileType[] AdjacentTiles (TileType originTile) {
-		TileType[] tileset = new TileType[9];
+	protected TTileType[] AdjacentTiles(TTileType originTile)
+	{
+		TTileType[] tileset = new TTileType[9];
 
-		Coordinates pos = getGridPosition(originTile);
+		Coordinates pos = GetGridPosition(originTile);
 		int tileCount = 0;
 
-		for (int x = -1; x <= +1; x++) {
-			for (int y = -1; y <= +1; y++) {
-				int checkX = pos.x + x;
-				int checkY = pos.y + y;
+		for (int x = -1; x <= +1; x++)
+			for (int y = -1; y <= +1; y++)
+			{
+				int checkX = pos.X + x;
+				int checkY = pos.Y + y;
 
 				//clamp to grid bounds
-				checkX = Math.Min(Math.Max(checkX, 0), columnCount - 1);
-				checkY = Math.Min(Math.Max(checkY, 0), rowCount - 1);
+				checkX = Math.Min(Math.Max(checkX, 0), ColumnCount - 1);
+				checkY = Math.Min(Math.Max(checkY, 0), RowCount - 1);
 
-				tileset[tileCount] = tileGrid[checkX, checkY];
+				tileset[tileCount] = TileGrid[checkX, checkY];
 
 				tileCount++;
 			}
-		}
 
-		return cleanArray(tileset);
+		return CleanArray(tileset);
 	}
 
-	protected void SwapGridTiles (TileType origin, TileType target) {
-		Coordinates oPos = getGridPosition(origin);
-		Coordinates tPos = getGridPosition(target);
+	protected void SwapGridTiles(TTileType origin, TTileType target)
+	{
+		Coordinates oPos = GetGridPosition(origin);
+		Coordinates tPos = GetGridPosition(target);
 
-		SwapReferences(ref tileGrid[oPos.x, oPos.y], ref tileGrid[tPos.x, tPos.y]);
+		SwapReferences(ref TileGrid[oPos.X, oPos.Y], ref TileGrid[tPos.X, tPos.Y]);
 	}
-	
-	
+
+
 	//ADDITIONAL METHODS
 
-	private TileType[] cleanArray (TileType[] inputArray) {
+	static TTileType[] CleanArray(TTileType[] inputArray)
+	{
 		ArrayList outList = new ArrayList();
 
-		for (int i = 0; i < inputArray.Length; i++) {
-			if (!outList.Contains(inputArray[i])) {
-				outList.Add(inputArray[i]);
-			}
-		}
+		foreach (TTileType t in inputArray)
+			if (!outList.Contains(t))
+				outList.Add(t);
 
-		TileType[] outArray = new TileType[outList.Count];
+		TTileType[] outArray = new TTileType[outList.Count];
 
-		for (int i = 0; i < outList.Count; i++) {
-			outArray[i] = (TileType)outList[i];
-		}
+		for (int i = 0; i < outList.Count; i++)
+			outArray[i] = (TTileType)outList[i];
+
 		return outArray;
 	}
 
-	private void SwapReferences<T> (ref T swap1, ref T swap2) {
+	static void SwapReferences<T>(ref T swap1, ref T swap2)
+	{
 		T swapVar = swap1;
 		swap1 = swap2;
 		swap2 = swapVar;

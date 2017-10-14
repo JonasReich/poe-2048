@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections;
 
@@ -6,329 +7,283 @@ namespace NONE
 
 	public class GameGrid : Grid<GameTile>
 	{
-		public int gridSize, score;
+		public int GridSize, Score;
 
-		public enum Direction { left, right, up, down };
+		public enum Direction { Left, Right, Up, Down };
 
-		private Vector2 firstPressPos, secondPressPos, currentSwipe;
-		private bool victory, moveInLastFrame;
-		private ArrayList _emptyTiles;
-		private ArrayList emptyTiles
+		Vector2 _firstPressPos;
+		bool _moveInLastFrame;
+		ArrayList _emptyTiles;
+
+		ArrayList EmptyTiles
 		{
 			get
 			{
 				_emptyTiles.Clear();
-				foreach (GameTile gc in tileGrid)
-				{
-					if (gc.index == 0)
+				foreach (GameTile gc in TileGrid)
+					if (gc.Value == 0)
 						_emptyTiles.Add(gc);
-				}
+
 				return _emptyTiles;
 			}
 		}
 
 
-		new void Awake ()
+		new void Awake()
 		{
-			rowCount = columnCount = gridSize;
+			RowCount = ColumnCount = GridSize;
 			base.Awake();
-			victory = moveInLastFrame = false;
+			_moveInLastFrame = false;
 
 			_emptyTiles = new ArrayList();
 		}
 
-		new void Start ()
+		new void Start()
 		{
 			base.Start();
 			MoveEnd();
 			Restart();
 		}
 
-		public void Restart ()
+		public void Restart()
 		{
-			foreach (GameTile gt in tileGrid)
-			{
+			foreach (GameTile gt in TileGrid)
 				gt.Kill();
-			}
+
 			PlaceRandomTile();
 			PlaceRandomTile();
 
-			Score.Clear();
+			global::Score.Clear();
 		}
 
-		void Update ()
+		void Update()
 		{
-			if (moveInLastFrame && AreTilesMoving() == false)
-			{
+			if (_moveInLastFrame && AreTilesMoving() == false)
 				MoveEnd();
-			}
 
 			CheckKeyboardInput();
 			CheckTouchInput();
 
-			moveInLastFrame = AreTilesMoving();
+			_moveInLastFrame = AreTilesMoving();
 		}
 
 
 		//BASIC GRID FUNCTIONS
 
-		private int[,] CreateValueGrid ()
-		{
-			int[,] valueGrid = new int[columnCount, rowCount];
-			for (int x = 0; x < columnCount; x++)
-			{
-				for (int y = 0; y < rowCount; y++)
-				{
-					valueGrid[x, y] = tileGrid[x, y].index;
-				}
-			}
-			return valueGrid;
-		}
-
-		private void PlaceRandomTile ()
+		void PlaceRandomTile()
 		{
 			if (!IsGridFull())
 			{
-				ArrayList eT = emptyTiles;
-				GameTile randomTile = (GameTile)eT[UnityEngine.Random.Range(0, emptyTiles.Count - 1)];
+				ArrayList eT = EmptyTiles;
+				GameTile randomTile = (GameTile)eT[UnityEngine.Random.Range(0, EmptyTiles.Count - 1)];
 				randomTile.Spawn();
 			}
 
 		}
 
-		private bool IsGridFull ()
+		bool IsGridFull()
 		{
-			foreach (GameTile gt in tileGrid)
-			{
-				if (gt.index == 0)
+			foreach (GameTile gt in TileGrid)
+				if (gt.Value == 0)
 					return false;
-			}
+
 			return true;
 		}
 
 
 		//MOVE TILES
 
-		private void MoveStart (Direction dir)
+		void MoveStart(Direction dir)
 		{
+			//end any remaining moves before starting a new one
 			if (AreTilesMoving())
-			{  //end any remaining moves before starting a new one
 				MoveEnd();
-			}
 
-			for (int i = 0; i < columnCount; i++)
-			{
+			for (int i = 0; i < ColumnCount; i++)
 				MoveInternally(dir);
-			}
 
 			MoveExternally();
 		}
 
-		private void MoveInternally (Direction dir)
+		void MoveInternally(Direction dir)
 		{
-			int moveCount = 0;
-
 			foreach (TilePair tp in ReturnFromDirection(dir))
 			{
-				if (tp.origin.index != 0)
+				if (tp.Origin.Value == 0) continue;
+				if (tp.Target.Value == 0)
 				{
-					if (tp.target.index == 0)
-					{
-						SwapGridTiles(tp.origin, tp.target);
-						moveCount++;
-					}
-					else if (tp.origin.index == tp.target.index && tp.target.isMergeOrigin == false && tp.origin.isMergeOrigin == false)
-					{
-						tp.origin.isMergeOrigin = true;
-						tp.origin.mergeTarget = tp.target;
-						tp.target.isMergeTarget = true;
-						tp.target.Kill();
-						SwapGridTiles(tp.origin, tp.target);
-						moveCount++;
-					}
+					SwapGridTiles(tp.Origin, tp.Target);
+				}
+				else if (tp.Origin.Value == tp.Target.Value
+					&& tp.Target.IsMergeOrigin == false && tp.Origin.IsMergeOrigin == false
+					&& tp.Origin.IsMergeTarget == false && tp.Target.IsMergeTarget == false)
+				{
+					tp.Origin.IsMergeOrigin = true;
+					tp.Origin.MergeTarget = tp.Target;
+					tp.Target.IsMergeTarget = true;
+					tp.Target.PreKill();
+					SwapGridTiles(tp.Origin, tp.Target);
 				}
 			}
 		}
 
-		private void MoveExternally ()
+		void MoveExternally()
 		{
-			for (int x = 0; x < columnCount; x++)
-			{
-				for (int y = 0; y < rowCount; y++)
-				{
-					tileGrid[x, y].moveTargetPosition = new Vector3(x - 1.5f, y - 1.5f);
-				}
-			}
+			for (int x = 0; x < ColumnCount; x++)
+				for (int y = 0; y < RowCount; y++)
+					TileGrid[x, y].MoveTargetPosition = new Vector3(x - 1.5f, y - 1.5f);
 		}
 
-		private void MoveEnd ()
+		void MoveEnd()
 		{
-			for (int x = 0; x < columnCount; x++)
-			{
-				for (int y = 0; y < rowCount; y++)
+			for (int x = 0; x < ColumnCount; x++)
+				for (int y = 0; y < RowCount; y++)
 				{
-					GameTile gt = tileGrid[x, y];
-					if (gt.isMergeOrigin)
+					GameTile gt = TileGrid[x, y];
+					if (gt.IsMergeOrigin)
 						gt.Merge();
-					gt.x = x;
-					gt.y = y;
-					gt.moveTargetPosition = gt.transform.position = new Vector3(x - 1.5f, y - 1.5f); //cant be changed with position.Set, because position returns a value
-					gt.mergeTarget = null;
-					gt.isMergeOrigin = false;
-					gt.isMergeTarget = false;
-					gt.moving = false;
+					if (gt.IsMergeTarget)
+						gt.Kill();
+					gt.X = x;
+					gt.Y = y;
+					gt.MoveTargetPosition =
+						gt.transform.position =
+							new Vector3(x - 1.5f, y - 1.5f); //cant be changed with position.Set, because position returns a value
+					gt.MergeTarget = null;
+					gt.IsMergeOrigin = false;
+					gt.IsMergeTarget = false;
 				}
-			}
 
 			PlaceRandomTile();
 		}
 
-		private bool AreTilesMoving ()
+		bool AreTilesMoving()
 		{
-			foreach (GameTile gt in tileGrid)
-			{
-				if (gt.moving)
+			foreach (GameTile gt in TileGrid)
+				if (gt.Moving)
 					return true;
-			}
+
 			return false;
 		}
 
 
 		//GRID ITERATORS
 
-		private class TilePair
+		class TilePair
 		{
-			public GameTile origin;
-			public GameTile target;
+			public GameTile Origin;
+			public GameTile Target;
 
-			public TilePair (GameTile _origin, GameTile _target)
+			public TilePair(GameTile origin, GameTile target)
 			{
-				origin = _origin;
-				target = _target;
+				Origin = origin;
+				Target = target;
 			}
 		}
 
-		public IEnumerable ReturnFromDirection (Direction dir)
+		public IEnumerable ReturnFromDirection(Direction dir)
 		{
 			switch (dir)
 			{
-				case Direction.down:
+				case Direction.Down:
 					return ReturnFromBottom();
-				case Direction.left:
+				case Direction.Left:
 					return ReturnFromLeft();
-				case Direction.right:
+				case Direction.Right:
 					return ReturnFromRight();
-				case Direction.up:
+				case Direction.Up:
 					return ReturnFromTop();
 				default:
 					return null;
 			}
 		}
 
-		private IEnumerable ReturnFromLeft ()
+		IEnumerable ReturnFromLeft()
 		{
-			for (int x = 1; x < columnCount; x++)
-			{
-				for (int y = 0; y < rowCount; y++)
-				{
-					yield return new TilePair(tileGrid[x, y], tileGrid[x - 1, y]);
-				}
-			}
+			for (int x = 1; x < ColumnCount; x++)
+				for (int y = 0; y < RowCount; y++)
+					yield return new TilePair(TileGrid[x, y], TileGrid[x - 1, y]);
 		}
 
-		private IEnumerable ReturnFromRight ()
+		IEnumerable ReturnFromRight()
 		{
-			for (int x = columnCount - 2; x >= 0; x--)
-			{
-				for (int y = 0; y < rowCount; y++)
-				{
-					yield return new TilePair(tileGrid[x, y], tileGrid[x + 1, y]);
-				}
-			}
+			for (int x = ColumnCount - 2; x >= 0; x--)
+				for (int y = 0; y < RowCount; y++)
+					yield return new TilePair(TileGrid[x, y], TileGrid[x + 1, y]);
 		}
 
-		private IEnumerable ReturnFromTop ()
+		IEnumerable ReturnFromTop()
 		{
-			for (int y = rowCount - 2; y >= 0; y--)
-			{
-				for (int x = 0; x < columnCount; x++)
-				{
-					yield return new TilePair(tileGrid[x, y], tileGrid[x, y + 1]);
-				}
-			}
+			for (int y = RowCount - 2; y >= 0; y--)
+				for (int x = 0; x < ColumnCount; x++)
+					yield return new TilePair(TileGrid[x, y], TileGrid[x, y + 1]);
 		}
 
-		private IEnumerable ReturnFromBottom ()
+		IEnumerable ReturnFromBottom()
 		{
-			for (int y = 1; y < rowCount; y++)
-			{
-				for (int x = 0; x < columnCount; x++)
-				{
-					yield return new TilePair(tileGrid[x, y], tileGrid[x, y - 1]);
-				}
-			}
+			for (int y = 1; y < RowCount; y++)
+				for (int x = 0; x < ColumnCount; x++)
+					yield return new TilePair(TileGrid[x, y], TileGrid[x, y - 1]);
 		}
 
 
 		//INPUT
 
-		private void CheckKeyboardInput ()
+		void CheckKeyboardInput()
 		{
 			if (Input.GetKeyDown(KeyCode.LeftArrow))
-				MoveStart(Direction.left);
+				MoveStart(Direction.Left);
 			if (Input.GetKeyDown(KeyCode.RightArrow))
-				MoveStart(Direction.right);
+				MoveStart(Direction.Right);
 			if (Input.GetKeyDown(KeyCode.DownArrow))
-				MoveStart(Direction.down);
+				MoveStart(Direction.Down);
 			if (Input.GetKeyDown(KeyCode.UpArrow))
-				MoveStart(Direction.up);
+				MoveStart(Direction.Up);
 		}
 
-		private void CheckTouchInput ()
+		const float SwipeDeadZoneRadius = 0.8f;
+		const float MinimumSwipeLength = 1;
+
+		void CheckTouchInput()
 		{
-			float swipeLength = 0.8f;
 
-			if (Input.touches.Length > 0)
+			if (Input.touches.Length <= 0) return;
+
+			Touch t = Input.GetTouch(0);
+			switch (t.phase)
 			{
-				Touch t = Input.GetTouch(0);
-				if (t.phase == TouchPhase.Began)
-				{
-					firstPressPos = Camera.main.ScreenToWorldPoint(t.position);
-				}
-				if (t.phase == TouchPhase.Ended)
-				{
-					secondPressPos = Camera.main.ScreenToWorldPoint(t.position);
-
-					currentSwipe = new Vector3(secondPressPos.x - firstPressPos.x, secondPressPos.y - firstPressPos.y);
-
-					if (currentSwipe.magnitude > 1)
+				case TouchPhase.Began:
+					_firstPressPos = Camera.main.ScreenToWorldPoint(t.position);
+					break;
+				case TouchPhase.Ended:
 					{
-						//normalize the 2d vector
+						Vector3 secondPressPos = Camera.main.ScreenToWorldPoint(t.position);
+
+						Vector3 currentSwipe = new Vector3(secondPressPos.x - _firstPressPos.x, secondPressPos.y - _firstPressPos.y);
+
+						if (currentSwipe.magnitude <= MinimumSwipeLength) return;
+
 						currentSwipe.Normalize();
 
-						//swipe upwards
-						if (currentSwipe.y > 0 && currentSwipe.x > -swipeLength && currentSwipe.x < swipeLength)
-						{
-							MoveStart(Direction.up);
-						}
-						//swipe down
-						if (currentSwipe.y < 0 && currentSwipe.x > -swipeLength && currentSwipe.x < swipeLength)
-						{
-							MoveStart(Direction.down);
-						}
-						//swipe left
-						if (currentSwipe.x < 0 && currentSwipe.y > -swipeLength && currentSwipe.y < swipeLength)
-						{
-							MoveStart(Direction.left);
-						}
-						//swipe right
-						if (currentSwipe.x > 0 && currentSwipe.y > -swipeLength && currentSwipe.y < swipeLength)
-						{
-							MoveStart(Direction.right);
-						}
+						if (IsSwipe(currentSwipe.y, currentSwipe.x))
+							MoveStart(Direction.Up);
+
+						if (IsSwipe(currentSwipe.y * -1, currentSwipe.x))
+							MoveStart(Direction.Down);
+
+						if (IsSwipe(currentSwipe.x * -1, currentSwipe.y))
+							MoveStart(Direction.Left);
+
+						if (IsSwipe(currentSwipe.x, currentSwipe.y))
+							MoveStart(Direction.Right);
 					}
-				}
+					break;
 			}
+		}
+
+		bool IsSwipe(float correctAxis, float wrongAxis)
+		{
+			return correctAxis > 0 && wrongAxis > -SwipeDeadZoneRadius && wrongAxis < SwipeDeadZoneRadius;
 		}
 	}
 }
