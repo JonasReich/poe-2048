@@ -2,16 +2,21 @@
 // (c) 2017, Jonas Reich
 //-------------------------
 
+using UnityEditor;
 using UnityEngine;
 
-public class GameTile : MonoBehaviour
+public class GameTile : MonoBehaviour, Grid<GameTile>.ITile
 {
-	public int X, Y;
+	public int X { get; set; }
+	public int Y { get; set; }
 	public float Speed, Scale;
 	internal bool IsMergeOrigin, IsMergeTarget;
 
-	internal bool Moving {get { return transform.position != MoveTargetPosition; }}
+	internal bool Moving { get { return transform.position != MoveTargetPosition; } }
 	internal GameTile MergeTarget;
+	
+	public float Width { get { return 1f; } }
+	public float Height { get { return 1f; } }
 
 	/// <summary>
 	/// Value of the individual tile 2, 4, 8, ...
@@ -26,8 +31,6 @@ public class GameTile : MonoBehaviour
 	void Awake()
 	{
 		Scale = 0.5f;
-
-		Value = X = Y = 0;
 		IsMergeOrigin = IsMergeTarget = false;
 		MergeTarget = null;
 
@@ -85,5 +88,10 @@ public class GameTile : MonoBehaviour
 		transform.localScale = new Vector3(1.5f, 1.5f);
 
 		Score.Raise(Value);
+	}
+
+	void OnDrawGizmos()
+	{
+		Handles.Label(transform.position, "(" + X + "|" + Y + ")");
 	}
 }

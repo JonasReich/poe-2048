@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace NONE
 {
@@ -17,9 +18,9 @@ namespace NONE
 
 		Vector2 _firstPressPos;
 		bool _moveInLastFrame;
-		ArrayList _emptyTiles;
+		List<GameTile> _emptyTiles;
 
-		ArrayList EmptyTiles
+		List<GameTile> EmptyTiles
 		{
 			get
 			{
@@ -39,14 +40,14 @@ namespace NONE
 			base.Awake();
 			_moveInLastFrame = false;
 
-			_emptyTiles = new ArrayList();
+			_emptyTiles = new List<GameTile>();
 		}
 
 		new void Start()
 		{
 			base.Start();
 			foreach (GameTile t in TileGrid)
-				t.MoveTargetPosition = t.transform.position;
+				t.MoveTargetPosition = t.transform.position = GridCoordniatesToWorldPosition(t.X, t.Y);
 			Restart();
 		}
 
@@ -79,8 +80,7 @@ namespace NONE
 		{
 			if (!IsGridFull())
 			{
-				ArrayList eT = EmptyTiles;
-				GameTile randomTile = (GameTile)eT[UnityEngine.Random.Range(0, EmptyTiles.Count - 1)];
+				GameTile randomTile = (GameTile)EmptyTiles[UnityEngine.Random.Range(0, EmptyTiles.Count - 1)];
 				randomTile.Spawn();
 			}
 
@@ -136,7 +136,7 @@ namespace NONE
 		{
 			for (int x = 0; x < ColumnCount; x++)
 				for (int y = 0; y < RowCount; y++)
-					TileGrid[x, y].MoveTargetPosition = new Vector3(x - 1.5f, y - 1.5f);
+					TileGrid[x, y].MoveTargetPosition = GridCoordniatesToWorldPosition(x, y);
 		}
 
 		void MoveEnd()
@@ -151,9 +151,7 @@ namespace NONE
 						gt.Kill();
 					gt.X = x;
 					gt.Y = y;
-					gt.MoveTargetPosition =
-						gt.transform.position =
-							new Vector3(x - 1.5f, y - 1.5f); //cant be changed with position.Set, because position returns a value
+					gt.MoveTargetPosition = gt.transform.position = GridCoordniatesToWorldPosition(x, y);
 					gt.MergeTarget = null;
 					gt.IsMergeOrigin = false;
 					gt.IsMergeTarget = false;

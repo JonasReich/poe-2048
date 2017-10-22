@@ -5,10 +5,13 @@
 using UnityEngine;
 using System.Collections;
 using System;
+using System.Security.Cryptography.X509Certificates;
+using UnityEngine.Serialization;
 
-public class Grid<TTileType> : MonoBehaviour where TTileType : MonoBehaviour
+public class Grid<TTileType> : MonoBehaviour where TTileType : MonoBehaviour, Grid<TTileType>.ITile
 {
-	public TTileType Prefab;
+	[FormerlySerializedAs("Prefab")]
+	public TTileType TilePrefab;
 
 	protected int ColumnCount;
 	protected int RowCount;
@@ -25,6 +28,15 @@ public class Grid<TTileType> : MonoBehaviour where TTileType : MonoBehaviour
 			X = x;
 			Y = y;
 		}
+	}
+
+	public interface ITile
+	{
+		float Width { get; }
+		float Height { get; }
+
+		int X { get; set; }
+		int Y { get; set; }
 	}
 
 
@@ -49,16 +61,38 @@ public class Grid<TTileType> : MonoBehaviour where TTileType : MonoBehaviour
 		{
 			for (int y = 0; y < ColumnCount; y++)
 			{
-				TTileType tNew = Instantiate(Prefab, new Vector3(0.5f + y - ColumnCount / 2.0f, 0.5f + x - RowCount / 2.0f), transform.rotation);
+				TTileType tNew = Instantiate(TilePrefab, GridCoordniatesToWorldPosition(x, y), transform.rotation);
 
 				tNew.name = x + " " + y;
 				TileGrid[y, x] = tNew;
-				tNew.transform.parent = this.transform;
+				tNew.transform.SetParent(this.transform, true);
 				TileCount++;
+				tNew.X = x;
+				tNew.Y = y;
 			}
 		}
 	}
 
+	protected Vector3 GridCoordniatesToWorldPosition(Coordinates coordinates)
+	{
+		return GridCoordniatesToWorldPosition(coordinates.X, coordinates.Y);
+	}
+
+	protected Vector3 GridCoordniatesToWorldPosition(int x, int y)
+	{
+		return transform.position + GridCoordinateToRelativePosition(x, y);
+	}
+
+	protected Vector3 GridCoordinateToRelativePosition(Coordinates coordinates)
+	{
+		return GridCoordinateToRelativePosition(coordinates.X, coordinates.Y);
+	}
+
+	protected Vector3 GridCoordinateToRelativePosition(int x, int y)
+	{
+		return new Vector3(-1f * (ColumnCount - 1) * TilePrefab.Width / 2f + TilePrefab.Width * x,
+			-1f * (RowCount - 1) * TilePrefab.Height / 2f + TilePrefab.Height * y);
+	}
 
 	//GRID MANIPULATION
 
